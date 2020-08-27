@@ -203,22 +203,20 @@ public class FileTxnSnapLog {
      */
     public long restore(DataTree dt, Map<Long, Integer> sessions,
                         PlayBackListener listener) throws IOException {
+        /**从快照文件中加载数据*/
         long deserializeResult = snapLog.deserialize(dt, sessions);
         FileTxnLog txnLog = new FileTxnLog(dataDir);
         if (-1L == deserializeResult) {
-            /* this means that we couldn't find any snapshot, so we need to
-             * initialize an empty database (reported in ZOOKEEPER-2325) */
+
             if (txnLog.getLastLoggedZxid() != -1) {
                 throw new IOException(
                         "No snapshot found, but there are log entries. " +
                         "Something is broken!");
             }
-            /* TODO: (br33d) we should either put a ConcurrentHashMap on restore()
-             *       or use Map on save() */
             save(dt, (ConcurrentHashMap<Long, Integer>)sessions);
-            /* return a zxid of zero, since we the database is empty */
             return 0;
         }
+        /**从事务日志文件中加载数据*/
         return fastForwardFromEdits(dt, sessions, listener);
     }
 

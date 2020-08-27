@@ -98,6 +98,11 @@ public class NettyServerCnxnFactory extends ServerCnxnFactory {
     @Sharable
     class CnxnChannelHandler extends ChannelDuplexHandler {
 
+        /**
+         *
+         * @param ctx
+         * @throws Exception
+         */
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             if (LOG.isTraceEnabled()) {
@@ -464,12 +469,8 @@ public class NettyServerCnxnFactory extends ServerCnxnFactory {
     
     @Override
     public void start() {
-        LOG.info("binding to port {}", localAddress);
         parentChannel = bootstrap.bind(localAddress).syncUninterruptibly().channel();
-        // Port changes after bind() if the original port was 0, update
-        // localAddress to get the real port.
         localAddress = (InetSocketAddress) parentChannel.localAddress();
-        LOG.info("bound to port " + getLocalPort());
     }
     
     public void reconfigure(InetSocketAddress addr) {
@@ -487,7 +488,14 @@ public class NettyServerCnxnFactory extends ServerCnxnFactory {
            oldChannel.close();
        }
     }
-    
+
+    /**
+     * 单机模式下会调用该方法
+     * @param zks
+     * @param startServer
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     public void startup(ZooKeeperServer zks, boolean startServer)
             throws IOException, InterruptedException {

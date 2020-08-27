@@ -120,27 +120,17 @@ public class QuorumPeerMain {
          * snapRetainCount：清理后保留的snapshot的个数,对应配置:autopurge.snapRetainCount,大于等于3,默认3
          * purgeInterval:清理任务TimeTask执行周期,即几个小时清理一次,对应配置:autopurge.purgeInterval,单位:小时
          */
-        // Start and schedule the the purge task
-        DatadirCleanupManager purgeMgr = new DatadirCleanupManager(config
-                .getDataDir(), config.getDataLogDir(), config
-                .getSnapRetainCount(), config.getPurgeInterval());
+        DatadirCleanupManager purgeMgr = new DatadirCleanupManager(config.getDataDir(), config.getDataLogDir(), config.getSnapRetainCount(), config.getPurgeInterval());
         purgeMgr.start();
 
         /**
          * 3.判断启动模式
          */
         if (args.length == 1 && config.isDistributed()) {
-            /**
-             * 集群模式
-             */
+            /**集群模式*/
             runFromConfig(config);
         } else {
-            LOG.warn("Either no config or no quorum defined in config, running "
-                    + " in standalone mode");
-            // there is only server in the quorum -- run as standalone
-            /**
-             * 单机模式
-             */
+            /**单机模式*/
             ZooKeeperServerMain.main(args);
         }
     }
@@ -201,6 +191,8 @@ public class QuorumPeerMain {
             quorumPeer.setSyncLimit(config.getSyncLimit());
             quorumPeer.setConfigFileName(config.getConfigFilename());
             quorumPeer.setZKDatabase(new ZKDatabase(quorumPeer.getTxnFactory()));
+
+            //默认实现QuorumMaj 集群节点信息,（集群节点总数，投票节点总数，observer节点数）
             quorumPeer.setQuorumVerifier(config.getQuorumVerifier(), false);
             if (config.getLastSeenQuorumVerifier() != null) {
                 quorumPeer.setLastSeenQuorumVerifier(config.getLastSeenQuorumVerifier(), false);
@@ -232,7 +224,7 @@ public class QuorumPeerMain {
             /**
              * 4.启动
              *  4.1 快照文件，日志文件加载到内存
-             *  4.2 客户端请求管理
+             *  4.2 Netty服务启动
              *  4.3 Leader选举初始化
              *  4.4 QuorumPeer线程
              */

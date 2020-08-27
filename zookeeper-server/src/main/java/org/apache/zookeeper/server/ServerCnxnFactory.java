@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ServerCnxnFactory {
 
-    public static final String ZOOKEEPER_SERVER_CNXN_FACTORY = "zookeeper.serverCnxnFactory";
+
     
     private static final Logger LOG = LoggerFactory.getLogger(ServerCnxnFactory.class);
 
@@ -122,7 +122,8 @@ public abstract class ServerCnxnFactory {
     }
 
     public abstract void closeAll();
-    
+
+    public static final String ZOOKEEPER_SERVER_CNXN_FACTORY = "zookeeper.serverCnxnFactory";
     static public ServerCnxnFactory createFactory() throws IOException {
         String serverCnxnFactoryName =
             System.getProperty(ZOOKEEPER_SERVER_CNXN_FACTORY);

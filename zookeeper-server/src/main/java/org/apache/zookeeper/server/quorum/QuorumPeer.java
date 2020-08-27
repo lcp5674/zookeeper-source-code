@@ -904,13 +904,12 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             throw new RuntimeException("My id " + myid + " not in the peer list");
         }
         /**
-         * 从事务日志目录dataLogDir和数据快照目录dataDir中恢复出DataTree数据
+         * 从事务日志目录dataLogDir和数据快照目录dataDir中
+         * 恢复出DataTree数据
          */
         loadDataBase();
 
-        /**
-         * 启动ServerCnxn，建立Socket通道
-         */
+        /**启动ServerCnxn，建立Socket通道*/
         startServerCnxnFactory();
         try {
             adminServer.start();
@@ -918,9 +917,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             LOG.warn("Problem starting AdminServer", e);
             System.out.println(e);
         }
-        /**
-         * 创建出选举算法
-         */
+        /**创建出选举算法,开始选举*/
         startLeaderElection();
 
         /**
@@ -955,9 +952,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 // this should only happen once when moving to a
                 // new code version
                 currentEpoch = epochOfZxid;
-                LOG.info(CURRENT_EPOCH_FILENAME
-                                + " not found! Creating with a reasonable default of {}. This should only happen when you are upgrading your installation",
-                        currentEpoch);
                 writeLongToFile(CURRENT_EPOCH_FILENAME, currentEpoch);
             }
             if (epochOfZxid > currentEpoch) {
@@ -966,13 +960,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             try {
                 acceptedEpoch = readLongFromFile(ACCEPTED_EPOCH_FILENAME);
             } catch (FileNotFoundException e) {
-                // pick a reasonable epoch number
-                // this should only happen once when moving to a
-                // new code version
                 acceptedEpoch = epochOfZxid;
-                LOG.info(ACCEPTED_EPOCH_FILENAME
-                                + " not found! Creating with a reasonable default of {}. This should only happen when you are upgrading your installation",
-                        acceptedEpoch);
                 writeLongToFile(ACCEPTED_EPOCH_FILENAME, acceptedEpoch);
             }
             if (acceptedEpoch < currentEpoch) {
@@ -998,6 +986,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         try {
             /**
              * 当服务器处于Looking状态时，实例化投票vote,参数:myid，事务id,当前任期
+             * 刚启动时会投票给自己
              */
             if (getPeerState() == ServerState.LOOKING) {
                 currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch());
@@ -1007,10 +996,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             re.setStackTrace(e.getStackTrace());
             throw re;
         }
-
-        // if (!getView().containsKey(myid)) {
-        //      throw new RuntimeException("My id " + myid + " not in the peer list");
-        //}
         if (electionType == 0) {
             try {
                 udpSocket = new DatagramSocket(getQuorumAddress().getPort());
@@ -1141,6 +1126,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 }
                 QuorumCnxManager.Listener listener = qcm.listener;
                 if (listener != null) {
+                    /**启动listener线程,创建ServerSocket，然后在一个while循环中调用accept接收客户端(注意：这里的客户端指的是集群中其它服务器)连接*/
                     listener.start();
                     FastLeaderElection fle = new FastLeaderElection(this, qcm);
                     fle.start();
@@ -1191,8 +1177,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     @Override
     public void run() {
         updateThreadName();
-
-        LOG.debug("Starting quorum peer");
         try {
             jmxQuorumBean = new QuorumBean(this);
             MBeanRegistry.getInstance().register(jmxQuorumBean, null);
@@ -1203,7 +1187,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                     try {
                         MBeanRegistry.getInstance().register(p, jmxQuorumBean);
                     } catch (Exception e) {
-                        LOG.warn("Failed to register with JMX", e);
                         jmxLocalPeerBean = null;
                     }
                 } else {
@@ -1230,9 +1213,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 switch (getPeerState()) {
                     case LOOKING:
                         if (Boolean.getBoolean("readonlymode.enabled")) {
-                            // Create read-only server but don't start it immediately
                             final ReadOnlyZooKeeperServer roZk =  new ReadOnlyZooKeeperServer(logFactory, this, this.zkDb);
-
                             Thread roZkMgr = new Thread() {
                                 public void run() {
                                     try {
@@ -1256,7 +1237,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                                 }
                                 setCurrentVote(makeLEStrategy().lookForLeader());
                             } catch (Exception e) {
-                                LOG.warn("Unexpected exception", e);
                                 setPeerState(ServerState.LOOKING);
                             } finally {
                                 roZkMgr.interrupt();
@@ -1275,7 +1255,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                                 //调用FastLeaderElection.lookForLeader()
                                 setCurrentVote(makeLEStrategy().lookForLeader());
                             } catch (Exception e) {
-                                LOG.warn("Unexpected exception", e);
                                 setPeerState(ServerState.LOOKING);
                             }
                         }
@@ -1286,7 +1265,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             setObserver(makeObserver(logFactory));
                             observer.observeLeader();
                         } catch (Exception e) {
-                            LOG.warn("Unexpected exception", e);
                         } finally {
                             observer.shutdown();
                             setObserver(null);
@@ -1299,7 +1277,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             setFollower(makeFollower(logFactory));
                             follower.followLeader();
                         } catch (Exception e) {
-                            LOG.warn("Unexpected exception", e);
                         } finally {
                             follower.shutdown();
                             setFollower(null);
@@ -1313,7 +1290,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             leader.lead();
                             setLeader(null);
                         } catch (Exception e) {
-                            LOG.warn("Unexpected exception", e);
                         } finally {
                             if (leader != null) {
                                 leader.shutdown("Forcing shutdown");

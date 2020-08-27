@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,27 +65,28 @@ import org.slf4j.LoggerFactory;
 public class ZKDatabase {
 
     private static final Logger LOG = LoggerFactory.getLogger(ZKDatabase.class);
-
-    /**
-     * make sure on a clear you take care of
-     * all these members.
-     */
+    //数据节点树
     protected DataTree dataTree;
+
+    //key为sessionId,value为超时时间
     protected ConcurrentHashMap<Long, Integer> sessionsWithTimeouts;
+
+    //事务、快照日志文件实例
     protected FileTxnSnapLog snapLog;
+
+    //最小提交的事务id和最大提交的事务id
     protected long minCommittedLog, maxCommittedLog;
 
-    /**
-     * Default value is to use snapshot if txnlog size exceeds 1/3 the size of snapshot
-     */
     public static final String SNAPSHOT_SIZE_FACTOR = "zookeeper.snapshotSizeFactor";
     public static final double DEFAULT_SNAPSHOT_SIZE_FACTOR = 0.33;
     private double snapshotSizeFactor;
 
     public static final int commitLogCount = 500;
     protected static int commitLogBuffer = 700;
+    //事务日志列表，记录着提案信息
     protected LinkedList<Proposal> committedLog = new LinkedList<Proposal>();
     protected ReentrantReadWriteLock logLock = new ReentrantReadWriteLock();
+    //初始化标记
     volatile private boolean initialized = false;
 
     /**
@@ -101,12 +102,12 @@ public class ZKDatabase {
 
         try {
             snapshotSizeFactor = Double.parseDouble(
-                System.getProperty(SNAPSHOT_SIZE_FACTOR,
-                        Double.toString(DEFAULT_SNAPSHOT_SIZE_FACTOR)));
+                    System.getProperty(SNAPSHOT_SIZE_FACTOR,
+                            Double.toString(DEFAULT_SNAPSHOT_SIZE_FACTOR)));
             if (snapshotSizeFactor > 1) {
                 snapshotSizeFactor = DEFAULT_SNAPSHOT_SIZE_FACTOR;
                 LOG.warn("The configured {} is invalid, going to use " +
-                        "the default {}", SNAPSHOT_SIZE_FACTOR,
+                                "the default {}", SNAPSHOT_SIZE_FACTOR,
                         DEFAULT_SNAPSHOT_SIZE_FACTOR);
             }
         } catch (NumberFormatException e) {
@@ -176,6 +177,7 @@ public class ZKDatabase {
     public long getminCommittedLog() {
         return minCommittedLog;
     }
+
     /**
      * Get the lock that controls the committedLog. If you want to get the pointer to the committedLog, you need
      * to use this lock to acquire a read lock before calling getCommittedLog()
@@ -189,7 +191,7 @@ public class ZKDatabase {
     public synchronized List<Proposal> getCommittedLog() {
         ReadLock rl = logLock.readLock();
         // only make a copy if this thread isn't already holding a lock
-        if(logLock.getReadHoldCount() <=0) {
+        if (logLock.getReadHoldCount() <= 0) {
             try {
                 rl.lock();
                 return new LinkedList<Proposal>(this.committedLog);
@@ -225,7 +227,7 @@ public class ZKDatabase {
     }
 
     private final PlayBackListener commitProposalPlaybackListener = new PlayBackListener() {
-        public void onTxnLoaded(TxnHeader hdr, Record txn){
+        public void onTxnLoaded(TxnHeader hdr, Record txn) {
             addCommittedProposal(hdr, txn);
         }
     };
@@ -293,7 +295,7 @@ public class ZKDatabase {
         boolean enabled = snapshotSizeFactor >= 0;
         if (enabled) {
             LOG.info("On disk txn sync enabled with snapshotSizeFactor "
-                + snapshotSizeFactor);
+                    + snapshotSizeFactor);
         } else {
             LOG.info("On disk txn sync disabled");
         }
@@ -369,6 +371,7 @@ public class ZKDatabase {
     public List<ACL> aclForNode(DataNode n) {
         return dataTree.getACL(n);
     }
+
     /**
      * remove a cnxn from the datatree
      * @param cnxn the cnxn to remove from the datatree
@@ -451,7 +454,7 @@ public class ZKDatabase {
      * @return the datanode for getting the path
      */
     public DataNode getNode(String path) {
-      return dataTree.getNode(path);
+        return dataTree.getNode(path);
     }
 
     /**
@@ -463,7 +466,7 @@ public class ZKDatabase {
      * @throws KeeperException.NoNodeException
      */
     public byte[] getData(String path, Stat stat, Watcher watcher)
-    throws KeeperException.NoNodeException {
+            throws KeeperException.NoNodeException {
         return dataTree.getData(path, stat, watcher);
     }
 
@@ -476,7 +479,7 @@ public class ZKDatabase {
      * @param watcher the watcher function
      */
     public void setWatches(long relativeZxid, List<String> dataWatches,
-            List<String> existWatches, List<String> childWatches, Watcher watcher) {
+                           List<String> existWatches, List<String> childWatches, Watcher watcher) {
         dataTree.setWatches(relativeZxid, dataWatches, existWatches, childWatches, watcher);
     }
 
@@ -500,7 +503,7 @@ public class ZKDatabase {
      * @throws KeeperException.NoNodeException
      */
     public List<String> getChildren(String path, Stat stat, Watcher watcher)
-    throws KeeperException.NoNodeException {
+            throws KeeperException.NoNodeException {
         return dataTree.getChildren(path, stat, watcher);
     }
 
@@ -548,7 +551,7 @@ public class ZKDatabase {
      */
     public void deserializeSnapshot(InputArchive ia) throws IOException {
         clear();
-        SerializeUtils.deserializeSnapshot(getDataTree(),ia,getSessionWithTimeOuts());
+        SerializeUtils.deserializeSnapshot(getDataTree(), ia, getSessionWithTimeOuts());
         initialized = true;
     }
 
@@ -559,7 +562,7 @@ public class ZKDatabase {
      * @throws InterruptedException
      */
     public void serializeSnapshot(OutputArchive oa) throws IOException,
-    InterruptedException {
+            InterruptedException {
         SerializeUtils.serializeSnapshot(getDataTree(), oa, getSessionWithTimeOuts());
     }
 

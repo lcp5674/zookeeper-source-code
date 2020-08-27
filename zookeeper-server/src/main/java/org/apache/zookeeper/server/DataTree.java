@@ -79,49 +79,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DataTree {
     private static final Logger LOG = LoggerFactory.getLogger(DataTree.class);
 
-    /**
-     * This hashtable provides a fast lookup to the datanodes. The tree is the
-     * source of truth and is where all the locking occurs
-     */
+    //哈希表提供对数据节点的快速查找
     private final ConcurrentHashMap<String, DataNode> nodes =
         new ConcurrentHashMap<String, DataNode>();
 
+    //Watcher相关
     private final WatchManager dataWatches = new WatchManager();
-
     private final WatchManager childWatches = new WatchManager();
 
-    /** the root of zookeeper tree */
+    //zookeeper默认创建的节点
     private static final String rootZookeeper = "/";
-
-    /** the zookeeper nodes that acts as the management and status node **/
     private static final String procZookeeper = Quotas.procZookeeper;
-
-    /** this will be the string thats stored as a child of root */
     private static final String procChildZookeeper = procZookeeper.substring(1);
-
-    /**
-     * the zookeeper quota node that acts as the quota management node for
-     * zookeeper
-     */
     private static final String quotaZookeeper = Quotas.quotaZookeeper;
-
-    /** this will be the string thats stored as a child of /zookeeper */
     private static final String quotaChildZookeeper = quotaZookeeper
             .substring(procZookeeper.length() + 1);
-
-    /**
-     * the zookeeper config node that acts as the config management node for
-     * zookeeper
-     */
     private static final String configZookeeper = ZooDefs.CONFIG_NODE;
-
-    /** this will be the string thats stored as a child of /zookeeper */
     private static final String configChildZookeeper = configZookeeper
             .substring(procZookeeper.length() + 1);
-
-    /**
-     * the path trie that keeps track fo the quota nodes in this datatree
-     */
     private final PathTrie pTrie = new PathTrie();
 
     /**

@@ -917,11 +917,14 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             LOG.warn("Problem starting AdminServer", e);
             System.out.println(e);
         }
-        /**创建出选举算法,开始选举*/
+        /**1.开启QuorumCnxnManager监听线程用于发送/接收投票;
+         * 2.选择选举算法*/
         startLeaderElection();
 
         /**
-         * 启动QuorumPeer线程，在该线程中进行服务器状态的检查
+         * QuorumPeer本身继承了ZookeeperThread
+         * 启动QuorumPeer线程
+         * 根据不同的状态执行不同的逻辑
          */
         super.start();
     }
@@ -1102,7 +1105,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     @SuppressWarnings("deprecation")
     protected Election createElectionAlgorithm(int electionAlgorithm) {
         Election le = null;
-
         //TODO: use a factory rather than a switch
         switch (electionAlgorithm) {
             case 0:
@@ -1116,7 +1118,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 break;
             case 3:
                 /**
-                 * 负责集群中各节点的网络IO，包含一个内部类Listener，Listener是一个线程，这里启动Listener线程，主要启动选举监听端口并处理连接进来的Socket
+                 * 负责集群中各节点的网络IO，包含一个内部类Listener，Listener是一个线程，这里启动Listener线程
+                 * 主要启动选举监听端口并处理连接进来的Socket
                  */
                 QuorumCnxManager qcm = createCnxnManager();
                 QuorumCnxManager oldQcm = qcmRef.getAndSet(qcm);
@@ -1126,7 +1129,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 }
                 QuorumCnxManager.Listener listener = qcm.listener;
                 if (listener != null) {
-                    /**启动listener线程,创建ServerSocket，然后在一个while循环中调用accept接收客户端(注意：这里的客户端指的是集群中其它服务器)连接*/
+                    /**启动listener线程,创建ServerSocket
+                     * 然后在一个while循环中调用accept接收客户端(注意：这里的客户端指的是集群中其它服务器)连接*/
                     listener.start();
                     FastLeaderElection fle = new FastLeaderElection(this, qcm);
                     fle.start();
@@ -1203,7 +1207,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             LOG.warn("Failed to register with JMX", e);
             jmxQuorumBean = null;
         }
-
         try {
             /*
              * 进入无限循环,不停的通过getPeerState方法获取当前节点状态
@@ -1244,12 +1247,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             }
                         } else {
                             try {
+                                /**3.5.5之后重配置操作*/
                                 reconfigFlagClear();
                                 if (shuttingDownLE) {
                                     shuttingDownLE = false;
-                                    /**
-                                     * 选举leader
-                                     */
+                                    /**选举leader*/
                                     startLeaderElection();
                                 }
                                 //调用FastLeaderElection.lookForLeader()

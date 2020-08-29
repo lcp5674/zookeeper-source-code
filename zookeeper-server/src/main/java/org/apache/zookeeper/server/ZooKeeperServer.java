@@ -310,27 +310,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      * Restore sessions and data
      */
     public void loadData() throws IOException, InterruptedException {
-        /*
-         * When a new leader starts executing Leader#lead, it
-         * invokes this method. The database, however, has been
-         * initialized before running leader election so that
-         * the server could pick its zxid for its initial vote.
-         * It does it by invoking QuorumPeer#getLastLoggedZxid.
-         * Consequently, we don't need to initialize it once more
-         * and avoid the penalty of loading it a second time. Not
-         * reloading it is particularly important for applications
-         * that host a large database.
-         *
-         * The following if block checks whether the database has
-         * been initialized or not. Note that this method is
-         * invoked by at least one other method:
-         * ZooKeeperServer#startdata.
-         *
-         * See ZOOKEEPER-1642 for more detail.
-         */
-        /**
-         * 如果内存数据库已经被初始化,则设置事务id为最后处理的zxid
-         */
+        /**如果内存数据库已经被初始化,则设置事务id为最后处理的zxid*/
         if (zkDb.isInitialized()) {
             setZxid(zkDb.getDataTreeLastProcessedZxid());
         } else {
@@ -338,18 +318,14 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             setZxid(zkDb.loadDataBase());
         }
 
-        /**
-         * 遍历会话，删除过期会话
-         */
+        /**遍历会话，删除过期会话 */
         LinkedList<Long> deadSessions = new LinkedList<Long>();
         for (Long session : zkDb.getSessions()) {
             if (zkDb.getSessionWithTimeOuts().get(session) == null) {
                 deadSessions.add(session);
             }
         }
-
         for (long session : deadSessions) {
-            // XXX: Is lastProcessedZxid really the best thing to use?
             killSession(session, zkDb.getDataTreeLastProcessedZxid());
         }
 
@@ -513,13 +489,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
         //启动会话管理器
         startSessionTracker();
-
-
-        //初始化处理器责任链PrepRequestProcessor-->SyncRequestProcessor-->FinalRequestProcessor
+        //初始化处理器责任链PrepRequestProcessor-->
+        // SyncRequestProcessor-->FinalRequestProcessor
         setupRequestProcessors();
-
         registerJMX();
-
         setState(State.RUNNING);
         notifyAll();
     }

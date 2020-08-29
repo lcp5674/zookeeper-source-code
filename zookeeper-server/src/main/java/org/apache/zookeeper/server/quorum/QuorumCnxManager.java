@@ -832,9 +832,7 @@ public class QuorumCnxManager {
                     } else {
                         ss = new ServerSocket();
                     }
-
                     ss.setReuseAddress(true);
-
                     /**
                      * Whether or not to listen on all IPs for the two quorum ports
                      * (broadcast and fast leader election).
@@ -851,6 +849,7 @@ public class QuorumCnxManager {
                     while (!shutdown) {
                         /**等待客户端连接*/
                         client = ss.accept();
+                        /**配置socket参数*/
                         setSockOpts(client);
                         if (quorumSaslAuthEnabled) {
                             /**底层还是调用receiveConnection方法*/
